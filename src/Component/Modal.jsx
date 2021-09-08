@@ -64,6 +64,7 @@ function Modal({ setOpenModal }) {
 
     const classes = useStyles();
     const [postType, setPostType] = React.useState('');
+    const [location, setLocation] = useState({ lat: '', lng: '' });
     const [open, setOpen] = React.useState(false);
     const [file, setfile] = useState(null);
     let { signOut, currentUser } = useContext(AuthContext);
@@ -87,6 +88,44 @@ function Modal({ setOpenModal }) {
         setOpen(true);
     };
 
+    const getLocation = () => {
+        // check if user's browser supports Navigator.geolocation
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(displayLocation, showError, options);
+        } else {
+            console.log("Sorry, your browser does not support this feature... Please Update your Browser to enjoy it");
+        }
+    }
+
+    // Displays the different error messages
+    const showError = (error) => {
+        switch (error.code) {
+            case error.PERMISSION_DENIED:
+                console.log("You denied the request for your location.");
+                break;
+            case error.POSITION_UNAVAILABLE:
+                console.log("Your Location information is unavailable.");
+                break;
+            case error.TIMEOUT:
+                console.log("Your request timed out. Please try again");
+                break;
+            case error.UNKNOWN_ERROR:
+                console.log("An unknown error occurred please try again after some time.");
+                break;
+        }
+    }
+
+    //Makes sure location accuracy is high
+    const options = {
+        enableHighAccuracy: true
+    }
+
+    const displayLocation = (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setLocation({ lat: lat, lng: lng });
+    }
+
 
     async function handleOnUpload() {
         try {
@@ -96,14 +135,14 @@ function Modal({ setOpenModal }) {
                 return;
             }
             let uid = currentUser.uid;
-            let  uploadVideoObject ;
-            if(postType=="Image"){
+            let uploadVideoObject;
+            if (postType == "Image") {
                 uploadVideoObject = firebaseStorage.ref(`profileImage/${uid}/${Date.now()}.jpg`).put(file);
-            }else if(postType=="Reels"){
+            } else if (postType == "Reels") {
                 uploadVideoObject = firebaseStorage.ref(`profileImage/${uid}/${Date.now()}.mp4`).put(file);
-                
+
             }
-           
+
 
             uploadVideoObject.on("state_changed", fun1, fun2, fun3);
             function fun1(snapshot) {
@@ -122,7 +161,8 @@ function Modal({ setOpenModal }) {
                     VideoLink: videoUploadUrl,
                     comment: [],
                     likes: [],
-                    postType:postType,
+                    postType: postType,
+                    location: location,
                     createdAt: timeStamp()
                 });
                 let doc = await firebaseDB.collection("users").doc(uid).get();
@@ -172,7 +212,7 @@ function Modal({ setOpenModal }) {
                         <Button variant="contained" color="secondary" component="label" className={classes.fullWidth} >Select File<input type="file" onChange={handlefileInput} hidden /></Button>
                     </CardActions>
                     <CardActions>
-                        <Button variant="contained" color="secondary" className={classes.fullWidth} >Add Location</Button>
+                        <Button variant="contained" color="secondary" className={classes.fullWidth} onClick={getLocation}>Add Location</Button>
                     </CardActions>
                     <CardActions>
                         <Button onClick={() => { setOpenModal(false) }} variant="contained" color="secondary" className={classes.fullWidth} >Cancel</Button>
